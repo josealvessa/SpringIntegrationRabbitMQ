@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:int-mongodb="http://www.springframework.org/schema/integration/mongodb"
+	xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+	xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
+		http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc.xsd
+		http://www.springframework.org/schema/integration/mongodb http://www.springframework.org/schema/integration/mongodb/spring-integration-mongodb.xsd">
+
+    
+	<!-- From RabbitMQ To STDOUT -->
+	<int-amqp:inbound-channel-adapter channel="fromRabbit"	queue-names="si.test.queue" connection-factory="connectionFactory" />
+	
+	<int:channel id="fromRabbit"></int:channel>
+	<!-- transforms currentTemp::tempScale into a Temperature pojo -->
+	<bean id="transformer" class="com.sample.consumer.util.POJOTransformer"/>
+	<int:transformer id="POJO" input-channel="fromRabbit" output-channel="subscribe-db"	method="toTemp" ref="transformer">
+	</int:transformer>
+	
+	<!-- imports databases configuration -->	
+	<import resource="datasource.xml" />
+	<int:publish-subscribe-channel id="subscribe-db" />
+	<!-- prints Temperature pojo -->
+	<int-stream:stdout-channel-adapter id="consoleOut" append-newline="true" channel="subscribe-db"/>
+	<!-- save the temperature into the collection temperature in our mongodb -->
+    <!-- we don't need to transform our POJO -->
+	<int-mongodb:outbound-channel-adapter id="MongoDB"	channel="subscribe-db"	collection-name="testeData" mongodb-factory="mongoDbFactory"/>
+	
+	<!-- <int:channel id="toSQL" />
+	transform the POJO into a Map
+	<int:object-to-map-transformer id="MAP" input-channel="subscribe-db" output-channel="toSQL" />
+
+	inserts the museum in MySQL
+	the payload must be a map, list or array
+	<int-jdbc:outbound-channel-adapter id="MySQL"   
+	query="insert into temperature (currentTemp, tempScale values (:payload[currentTemp], :payload[tempScale])"
+	    data-source="mySQLDataSource" channel="toSQL"/> -->
+	 
+	
+
+	<!-- Infrastructure -->
+	<rabbit:connection-factory id="connectionFactory" host="localhost" />
+	<rabbit:template id="amqpTemplate" connection-factory="connectionFactory" />
+	<rabbit:admin connection-factory="connectionFactory" />
+	<rabbit:queue name="si.test.queue" auto-delete="false" durable="true" exclusive="false"  />
+	<!-- <rabbit:direct-exchange name="si.test.exchange" >
+		<rabbit:bindings>
+			<rabbit:binding queue="si.test.queue" key="si.test.binding" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange> -->
+
+</beans>

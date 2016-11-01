@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+						http://www.springframework.org/schema/data/mongo
+          				http://www.springframework.org/schema/data/mongo/spring-mongo-1.0.xsd">
+
+	<!-- MONGODB CONFIGURATION -->
+	<mongo:mongo host="127.0.0.1" port="27017"></mongo:mongo>  
+	<mongo:db-factory dbname="test"></mongo:db-factory>  
+	
+	<!-- MYSQL CONFIGURATION -->
+	<bean id="mySQLDataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/db_basic" />
+		<property name="username" value="root" />
+		<property name="password" value="root" />
+	</bean>
+
+</beans>
